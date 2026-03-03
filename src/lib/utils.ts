@@ -24,7 +24,7 @@ export function formatDate(date: Date | string | null | undefined): string {
     }).format(new Date(date));
 }
 
-export const SITE_STATUS_LABELS: Record<string, string> = {
+export const STATUS_LABELS: Record<string, string> = {
     NEW: "Khảo sát mới",
     REVIEWING: "Đang đánh giá",
     PENDING: "Chờ duyệt",
@@ -32,7 +32,15 @@ export const SITE_STATUS_LABELS: Record<string, string> = {
     CANCELLED: "Đã hủy",
 };
 
-export const SITE_STATUS_COLORS: Record<string, string> = {
+export const STATUS_COLORS: Record<string, string> = {
+    NEW: "#3b82f6",     // Blue
+    REVIEWING: "#f59e0b", // Amber
+    PENDING: "#a855f7",   // Purple
+    SIGNED: "#10b981",    // Emerald
+    CANCELLED: "#ef4444", // Red
+};
+
+export const STATUS_CLASS_MAP: Record<string, string> = {
     NEW: "bg-blue-500/20 text-blue-300 border-blue-500/30",
     REVIEWING: "bg-amber-500/20 text-amber-300 border-amber-500/30",
     PENDING: "bg-purple-500/20 text-purple-300 border-purple-500/30",
