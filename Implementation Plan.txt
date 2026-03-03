@@ -1,0 +1,48 @@
+# Quản lý mặt bằng (Site Manager App)
+
+Ứng dụng nội bộ quản lý các mặt bằng (site) do bộ phận Site Development cung cấp. Mục đích chính là lưu trữ, tham khảo, đối chiếu với hệ thống phân quyền chặt chẽ, theo dõi tiến độ cấp phép (workflow status), lưu vết lịch sử (audit log), quản lý file đính kèm/hình ảnh và bình luận (comments).
+
+## User Review Required
+
+- **Lưu trữ file đính kèm:** Để upload và lưu trữ hình ảnh/báo giá, hệ thống sẽ sử dụng dịch vụ lưu trữ đám mây nào (ví dụ AWS S3, Cloudinary) hay lưu tạm thời trên ổ cứng server trong môi trường nội bộ? (Mặc định trong giai đoạn phát triển đầu: lưu trữ qua module file upload vào thư mục local của dự án).
+- **Domain Email hợp lệ:** Việc chỉ giới hạn tạo các user có đuôi email là `@qsrvietnam.com` sẽ được hard-code ở cấp server để đảm bảo an toàn.
+- **Triển khai Database:** Sử dụng hệ quản trị CSDL PostgreSQL.
+
+## Proposed Changes
+
+Dự án này là dự án tạo mới hoàn toàn. Mã nguồn dự kiến sẽ được đặt tại môi trường làm việc `c:/SRC/site_manager`.
+Công nghệ sử dụng: Next.js (Full-stack React), TailwindCSS, Prisma (ORM cho Database), NextAuth.js (Quản lý User Auth).
+
+### Cấu trúc Database (Prisma Schema dự kiến)
+- **User Models**: Lưu thông tin `User` và `Role` (Admin, SiteManager, SiteDeveloper, BrandTeam, Other).
+- **Site Model**: Quản lý danh sách mặt bằng:
+  - `id`, `name`, `address`, `ward`, `city`, `type` (Shop house, Mall,...), `description`, `rentPrice`, `rentType` (TOS, Fix Rent)
+  - `status` (Khảo sát, Chờ duyệt, Đã chốt, Đã hủy)
+  - `mapsLink`, `createdBy` (quan hệ tới User)
+  - `createdAt`, `updatedAt`
+- **SiteAttachment Model**: Quản lý file đính kèm của một Site:
+  - `id`, `siteId` (thuộc về Site nào), `fileUrl`, `fileName`, `uploadedBy`
+- **Comment Model**: Quản lý trao đổi/bình luận:
+  - `id`, `siteId`, `userId`, `content`, `createdAt`
+- **AuditLog Model**: Lưu vết thay đổi dữ liệu (đặc biệt là tình trạng và các thay đổi của Site):
+  - `id`, `entityId` (Id của Site), `action` (CREATE, UPDATE, STATUS_CHANGE), `changedValues` (JSON ghi rõ từ gì sang gì), `userId`, `createdAt`
+
+### Modules & Giao diện (UI)
+- Ứng dụng sẽ được thiết kế theo xu hướng hiện đại, trực quan, sạch sẽ đúng chuẩn Doanh nghiệp.
+- **Authentication**: Màn hình đăng nhập bảo mật.
+- **Màn hình Admin**: Quản lý User (thêm mới, giới hạn domain, cấp role).
+- **Site Management**: Bảng danh sách Site có khả năng phân trang, lọc; Màn hình điền form thêm mới/sửa Site.
+- **Site Detail View**: Hiển thị hồ sơ chi tiết một Site, chia thành các Tab: Thông tin chung, Bản đồ (Maps Link redirect), File Đính kèm (hiện ảnh lưới/grid), Comments, và Lịch sử chỉnh sửa (Audit Log).
+
+## Verification Plan
+
+### Automated Tests
+- Kiểm tra kết nối API tới Database.
+- Xác thực NextAuth chỉ cấp quyền cho đúng định dạng user được Admin chọn.
+
+### Manual Verification
+1. Đăng nhập Admin, tạo thử user với các Role: Site Team, Brand Team.
+2. Role Site Team: Tạo 1 Site mới với đầy đủ thông tin, trạng thái, và upload ảnh thực tế mặt bằng. Sửa lại trạng thái site để sinh ra Audit Log tự động.
+3. Role Brand Team: Kiểm tra hệ thống chỉ cho phép xem (View-only), không cho sửa Site, nhưng được quyền viết Comments.
+4. Kiểm tra lịch sử (Audit Log): Đảm bảo ghi nhận đúng những thay đổi về giá/trạng thái (thời gian, người đổi, thông tin cũ -> mới).
+5. Xác minh Link Google Maps hoạt động chính xác khi Click.

@@ -1,0 +1,33 @@
+# Danh sách công việc: Site Manager App
+
+Phân rã các bước thực hiện để xây dựng hệ thống quản lý mặt bằng `c:/SRC/site_manager`.
+
+- [ ] 1. Khởi tạo dự án Next.js
+  - [ ] 1.1 Chạy lệnh tạo Next.js App
+  - [ ] 1.2 Thiết lập TailwindCSS, shadcn/ui (hoặc bộ components tương đương) cho giao diện hiện đại
+  - [ ] 1.3 Thiết lập hệ thống Layout khung xương của App (Sidebar, Header, Navigation)
+- [ ] 2. Database & Authentication
+  - [ ] 2.1 Cấu hình Prisma và kết nối vào CSDL (PostgreSQL / SQLite dùng tạm thời cho Dev)
+  - [ ] 2.2 Tạo cấu trúc Schema Database (User, Site, SiteAttachment, Comment, AuditLog)
+  - [ ] 2.3 Thiết lập cơ chế Đăng nhập & Xác thực, có giới hạn domain `@qsrvietnam.com`
+- [ ] 3. Quản lý người dùng (Dành cho Admin)
+  - [ ] 3.1 Xây dựng trang danh sách User
+  - [ ] 3.2 Xây dựng Form tạo mới User & Phân Role (Admin, Site Team, Brand Team, Other)
+- [ ] 4. Quản lý Site (Core Module)
+  - [ ] 4.1 Xây dựng màn hình danh sách Site (Data table với phân trang, các bộ lọc)
+  - [ ] 4.2 Xây dựng màn hình Thêm mới và Chỉnh sửa Site (Tên, địa chỉ, loại, giá, hình thức...)
+  - [ ] 4.3 Xây dựng màn hình Chi tiết Site (View Detail)
+- [ ] 5. File Uploads & Bản đồ
+  - [ ] 5.1 Tích hợp thư viện liên quan đến file upload (vào thư mục local public hoặc Cloud bucket)
+  - [ ] 5.2 Xây dựng component upload và quản lý file hiển thị tại màn hình Chi tiết Site
+  - [ ] 5.3 Xây dựng ô nhập/hiển thị Google Maps Link
+- [ ] 6. Luồng cập nhật trạng thái (Workflow) & Audit Log
+  - [ ] 6.1 Gắn Logic chặn: Chỉ Site Team / Admin mới được quyền sửa/thay đổi thông tin và trạng thái của Site
+  - [ ] 6.2 Xây dựng cơ chế lưu vết log tự động vào bảng AuditLog khi có sự can thiệp dữ liệu Site
+  - [ ] 6.3 Hiển thị danh sách Lịch sử chỉnh sửa trong trang Chi tiết Site
+- [ ] 7. Bình luận (Comments)
+  - [ ] 7.1 Xây dựng cấu trúc API cho danh sách Comment của từng mặt bằng
+  - [ ] 7.2 Cho phép Brand Team / Other nhận xét và theo dõi luồng trao đổi
+- [ ] 8. Hoàn thiện (Polishing & Verification)
+  - [ ] 8.1 Kiểm tra phân quyền từng Role
+  - [ ] 8.2 Tinh chỉnh UI/UX, thêm các micro-animations cho trải nghiệm cao cấp

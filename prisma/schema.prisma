@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  password      String
+  role          String    @default("OTHER") // ADMIN | SITE_TEAM | BRAND_TEAM | OTHER
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sites         Site[]    @relation("CreatedBy")
+  comments      Comment[]
+  auditLogs     AuditLog[]
+  attachments   SiteAttachment[]
+}
+
+model Site {
+  id            String    @id @default(cuid())
+  name          String
+  address       String
+  ward          String?
+  district      String?
+  city          String
+  siteType      String    // SHOPHOUSE | MALL | STREET | OFFICE | OTHER
+  description   String?
+  rentPrice     Float?
+  rentUnit      String?   // VND/month, USD/month etc
+  rentType      String?   // TOS | FIX_RENT
+  floorArea     Float?    // m2
+  frontage      Float?    // m
+  floors        Int?
+  mapsLink      String?
+  status        String    @default("NEW") // NEW | REVIEWING | PENDING | SIGNED | CANCELLED
+  
+  createdById   String
+  createdBy     User      @relation("CreatedBy", fields: [createdById], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  attachments   SiteAttachment[]
+  comments      Comment[]
+  auditLogs     AuditLog[]
+
+  @@index([city])
+  @@index([status])
+  @@index([siteType])
+}
+
+model SiteAttachment {
+  id            String    @id @default(cuid())
+  siteId        String
+  site          Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  fileName      String
+  fileUrl       String
+  fileType      String    // image | document
+  fileSize      Int?
+  uploadedById  String
+  uploadedBy    User      @relation(fields: [uploadedById], references: [id])
+  createdAt     DateTime  @default(now())
+
+  @@index([siteId])
+}
+
+model Comment {
+  id            String    @id @default(cuid())
+  siteId        String
+  site          Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  content       String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([siteId])
+}
+
+model AuditLog {
+  id            String    @id @default(cuid())
+  siteId        String
+  site          Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  action        String    // CREATE | UPDATE | STATUS_CHANGE | UPLOAD | DELETE_ATTACHMENT
+  fieldChanged  String?   // the field name that changed
+  oldValue      String?
+  newValue      String?
+  description   String?
+  createdAt     DateTime  @default(now())
+
+  @@index([siteId])
+}
