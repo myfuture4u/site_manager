@@ -9,7 +9,7 @@ interface AuditLog {
     fieldChanged: string | null;
     oldValue: string | null;
     newValue: string | null;
-    description: string;
+    description: string | null;
     createdAt: string;
     user: {
         name: string;
