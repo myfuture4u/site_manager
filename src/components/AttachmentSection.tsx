@@ -76,25 +76,23 @@ export default function AttachmentSection({ siteId, attachments }: AttachmentSec
                     <Paperclip size={20} className="text-blue-400" />
                     Tài liệu & Hình ảnh ({attachments.length})
                 </h2>
-                {(role === "ADMIN" || role === "SITE_TEAM") && (
-                    <>
-                        <button
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={uploading}
-                            className="text-sm font-medium text-blue-400 hover:text-blue-300 flex items-center gap-1 disabled:opacity-50"
-                        >
-                            {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                            Tải lên
-                        </button>
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFileUpload}
-                            className="hidden"
-                            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
-                        />
-                    </>
-                )}
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="text-sm font-medium text-blue-400 hover:text-blue-300 flex items-center gap-1 disabled:opacity-50"
+                    >
+                        {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                        Tải lên
+                    </button>
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                    />
+                </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -120,7 +118,7 @@ export default function AttachmentSection({ siteId, attachments }: AttachmentSec
                             >
                                 Xem file
                             </a>
-                            {(role === "ADMIN" || role === "SITE_TEAM") && (
+                            {(role === "ADMIN" || role === "SITE_TEAM" || file.uploadedById === session?.user?.id) && (
                                 <button
                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(file.id); }}
                                     disabled={deletingId === file.id}

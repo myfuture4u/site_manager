@@ -42,59 +42,66 @@ export async function PUT(
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { id } = await params;
-    const body = await req.json();
-    const oldSite = await prisma.site.findUnique({ where: { id } });
-    if (!oldSite) return NextResponse.json({ error: "Site not found" }, { status: 404 });
+    try {
+        const { id } = await params;
+        const body = await req.json();
+        const oldSite = await prisma.site.findUnique({ where: { id } });
+        if (!oldSite) return NextResponse.json({ error: "Site not found" }, { status: 404 });
 
-    const { name, address, ward, district, city, siteType, description, rentPrice, rentUnit, rentType, floorArea, frontage, floors, mapsLink, status } = body;
+        const { name, address, street, ward, district, city, siteType, description, rentPrice, rentUnit, rentType, floorArea, frontage, floors, mapsLink, status } = body;
 
-    // Track changes for audit log
-    const changes: Array<{ field: string; old: string; new: string }> = [];
-    const fieldsToCheck: Array<[string, unknown, unknown]> = [
-        ["name", oldSite.name, name],
-        ["address", oldSite.address, address],
-        ["city", oldSite.city, city],
-        ["status", oldSite.status, status],
-        ["rentPrice", oldSite.rentPrice, rentPrice],
-        ["rentType", oldSite.rentType, rentType],
-    ];
-    for (const [field, oldVal, newVal] of fieldsToCheck) {
-        if (newVal !== undefined && String(oldVal) !== String(newVal)) {
-            changes.push({ field, old: String(oldVal ?? ""), new: String(newVal ?? "") });
+        // Track changes for audit log
+        const changes: Array<{ field: string; old: string; new: string }> = [];
+        const fieldsToCheck: Array<[string, unknown, unknown]> = [
+            ["name", oldSite.name, name],
+            ["address", oldSite.address, address],
+            ["street", oldSite.street, street],
+            ["ward", oldSite.ward, ward],
+            ["city", oldSite.city, city],
+            ["status", oldSite.status, status],
+            ["rentPrice", oldSite.rentPrice, rentPrice],
+            ["rentType", oldSite.rentType, rentType],
+        ];
+        for (const [field, oldVal, newVal] of fieldsToCheck) {
+            if (newVal !== undefined && String(oldVal) !== String(newVal)) {
+                changes.push({ field, old: String(oldVal ?? ""), new: String(newVal ?? "") });
+            }
         }
-    }
 
-    const updated = await prisma.site.update({
-        where: { id },
-        data: {
-            name, address, ward, district, city, siteType, description,
-            rentPrice: rentPrice != null ? parseFloat(rentPrice) : null,
-            rentUnit, rentType,
-            floorArea: floorArea != null ? parseFloat(floorArea) : null,
-            frontage: frontage != null ? parseFloat(frontage) : null,
-            floors: floors != null ? parseInt(floors) : null,
-            mapsLink, status,
-        },
-        include: { createdBy: { select: { name: true } } },
-    });
-
-    // Write audit log for each change
-    for (const change of changes) {
-        await prisma.auditLog.create({
+        const updated = await prisma.site.update({
+            where: { id },
             data: {
-                siteId: id,
-                userId: session.user.id,
-                action: change.field === "status" ? "STATUS_CHANGE" : "UPDATE",
-                fieldChanged: change.field,
-                oldValue: change.old,
-                newValue: change.new,
-                description: `Cập nhật "${change.field}": ${change.old} → ${change.new}`,
+                name, address, street, ward, district, city, siteType, description,
+                rentPrice: rentPrice != null ? parseFloat(rentPrice) : null,
+                rentUnit, rentType,
+                floorArea: floorArea != null ? parseFloat(floorArea) : null,
+                frontage: frontage != null ? parseFloat(frontage) : null,
+                floors: floors != null ? parseInt(floors) : null,
+                mapsLink, status,
             },
+            include: { createdBy: { select: { name: true } } },
         });
-    }
 
-    return NextResponse.json(updated);
+        // Write audit log for each change
+        for (const change of changes) {
+            await prisma.auditLog.create({
+                data: {
+                    siteId: id,
+                    userId: session.user.id,
+                    action: change.field === "status" ? "STATUS_CHANGE" : "UPDATE",
+                    fieldChanged: change.field,
+                    oldValue: change.old,
+                    newValue: change.new,
+                    description: `Cập nhật "${change.field}": ${change.old} → ${change.new}`,
+                },
+            });
+        }
+
+        return NextResponse.json(updated);
+    } catch (error: any) {
+        console.error("Error updating site:", error);
+        return NextResponse.json({ error: "Lỗi server khi cập nhật mặt bằng: " + error.message }, { status: 500 });
+    }
 }
 
 export async function DELETE(

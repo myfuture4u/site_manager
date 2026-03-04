@@ -29,6 +29,7 @@ export default function SitesPage() {
     const [search, setSearch] = useState("");
     const [status, setStatus] = useState("");
     const [city, setCity] = useState("");
+    const [timeRange, setTimeRange] = useState("");
     const [showForm, setShowForm] = useState(false);
 
     const fetchSites = useCallback(async () => {
@@ -39,6 +40,7 @@ export default function SitesPage() {
                 search,
                 status,
                 city,
+                timeRange,
                 limit: "10"
             });
             const res = await fetch(`/api/sites?${params}`);
@@ -50,7 +52,7 @@ export default function SitesPage() {
         } finally {
             setLoading(false);
         }
-    }, [page, search, status, city]);
+    }, [page, search, status, city, timeRange]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -112,6 +114,21 @@ export default function SitesPage() {
                         <option value="Đà Nẵng">Đà Nẵng</option>
                     </select>
                 </div>
+
+                <div className="w-48">
+                    <select
+                        className="select-field"
+                        value={timeRange}
+                        onChange={(e) => setTimeRange(e.target.value)}
+                    >
+                        <option value="">Tất cả thời gian</option>
+                        <option value="7d">7 ngày qua</option>
+                        <option value="14d">14 ngày qua</option>
+                        <option value="1m">1 tháng qua</option>
+                        <option value="3m">1 quý qua</option>
+                        <option value="1y">1 năm qua</option>
+                    </select>
+                </div>
             </div>
 
             {/* Table */}
@@ -129,11 +146,22 @@ export default function SitesPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-800">
-                            {sites.map((site) => (
-                                <tr key={site.id} className="hover:bg-zinc-800/30 transition-colors">
+                            {sites.map((site, index) => (
+                                <tr key={site.id} className="hover:bg-zinc-800/30 transition-colors animate-slide-up" style={{ animationDelay: `${index * 50}ms` }}>
                                     <td className="p-4">
-                                        <div className="font-semibold text-white">{site.name}</div>
-                                        <div className="text-xs text-zinc-500 truncate max-w-[200px]">{site.address}</div>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-xl bg-zinc-800 overflow-hidden border border-zinc-700 flex-shrink-0 flex items-center justify-center text-zinc-600">
+                                                {site.attachments?.[0]?.fileUrl ? (
+                                                    <img src={site.attachments[0].fileUrl} alt="Thumbnail" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <Building size={20} />
+                                                )}
+                                            </div>
+                                            <div>
+                                                <div className="font-semibold text-white">{site.name}</div>
+                                                <div className="text-xs text-zinc-500 truncate max-w-[200px]">{site.address}</div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td className="p-4">
                                         <div className="flex items-center gap-2 text-sm text-zinc-300">

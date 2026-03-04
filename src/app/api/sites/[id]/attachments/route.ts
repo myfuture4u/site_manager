@@ -12,9 +12,6 @@ export async function POST(
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const role = session.user.role;
-    if (role !== "ADMIN" && role !== "SITE_TEAM") {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     const { id: siteId } = await params;
     const site = await prisma.site.findUnique({ where: { id: siteId } });
@@ -68,9 +65,6 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const role = session.user.role;
-    if (role !== "ADMIN" && role !== "SITE_TEAM") {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     const { id: siteId } = await params;
     const { searchParams } = new URL(req.url);
@@ -79,6 +73,11 @@ export async function DELETE(
 
     const attachment = await prisma.siteAttachment.findUnique({ where: { id: attachmentId } });
     if (!attachment || attachment.siteId !== siteId) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    // Only Admin, Site Team, or the uploader themselves can delete
+    if (role !== "ADMIN" && role !== "SITE_TEAM" && attachment.uploadedById !== session.user.id) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     await prisma.siteAttachment.delete({ where: { id: attachmentId } });
 

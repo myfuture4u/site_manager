@@ -47,6 +47,10 @@ export default async function SiteDetailsPage({ params }: { params: Promise<{ id
             comments: {
                 include: { user: { select: { name: true } } },
                 orderBy: { createdAt: "asc" }
+            },
+            auditLogs: {
+                include: { user: { select: { name: true } } },
+                orderBy: { createdAt: "desc" }
             }
         }
     });
@@ -76,7 +80,7 @@ export default async function SiteDetailsPage({ params }: { params: Promise<{ id
                     </div>
                     <div className="flex items-center gap-2 text-zinc-400">
                         <MapPin size={16} />
-                        <span className="text-sm">{site.address}, {site.city}</span>
+                        <span className="text-sm">{[site.address, site.street, site.ward, site.city].filter(Boolean).join(", ")}</span>
                     </div>
                 </div>
                 <SiteActions site={site} />
@@ -118,6 +122,10 @@ export default async function SiteDetailsPage({ params }: { params: Promise<{ id
                     <div className="glass-card p-6">
                         <h3 className="text-sm font-semibold text-white mb-4 uppercase tracking-wider">Thông tin quy hoạch</h3>
                         <div className="space-y-4">
+                            <div>
+                                <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-tighter">Đường</p>
+                                <p className="text-sm text-zinc-300">{site.street || "—"}</p>
+                            </div>
                             <div>
                                 <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-tighter">Phường/Xã</p>
                                 <p className="text-sm text-zinc-300">{site.ward || "—"}</p>

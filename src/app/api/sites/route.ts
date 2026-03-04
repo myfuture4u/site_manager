@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get("status") || "";
     const city = searchParams.get("city") || "";
     const siteType = searchParams.get("siteType") || "";
+    const timeRange = searchParams.get("timeRange") || "";
 
     const where: Record<string, unknown> = {};
     if (search) {
@@ -27,6 +28,20 @@ export async function GET(req: NextRequest) {
     if (city) where.city = { contains: city };
     if (siteType) where.siteType = siteType;
 
+    if (timeRange) {
+        const now = new Date();
+        let fromDate = new Date();
+        if (timeRange === "7d") fromDate.setDate(now.getDate() - 7);
+        else if (timeRange === "14d") fromDate.setDate(now.getDate() - 14);
+        else if (timeRange === "1m") fromDate.setMonth(now.getMonth() - 1);
+        else if (timeRange === "3m") fromDate.setMonth(now.getMonth() - 3);
+        else if (timeRange === "1y") fromDate.setFullYear(now.getFullYear() - 1);
+
+        if (timeRange !== "all") {
+            where.createdAt = { gte: fromDate };
+        }
+    }
+
     const [sites, total] = await Promise.all([
         prisma.site.findMany({
             where,
@@ -36,6 +51,11 @@ export async function GET(req: NextRequest) {
             include: {
                 createdBy: { select: { name: true, email: true } },
                 _count: { select: { comments: true, attachments: true } },
+                attachments: {
+                    where: { fileType: "image" },
+                    take: 1,
+                    select: { fileUrl: true }
+                }
             },
         }),
         prisma.site.count({ where }),
@@ -52,36 +72,41 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const body = await req.json();
-    const { name, address, ward, district, city, siteType, description, rentPrice, rentUnit, rentType, floorArea, frontage, floors, mapsLink } = body;
+    try {
+        const body = await req.json();
+        const { name, address, street, ward, district, city, siteType, description, rentPrice, rentUnit, rentType, floorArea, frontage, floors, mapsLink } = body;
 
-    if (!name || !address || !city || !siteType) {
-        return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+        if (!name || !address || !city || !siteType) {
+            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+        }
+
+        const site = await prisma.site.create({
+            data: {
+                name, address, street, ward, district, city, siteType, description,
+                rentPrice: rentPrice ? parseFloat(rentPrice) : null,
+                rentUnit, rentType,
+                floorArea: floorArea ? parseFloat(floorArea) : null,
+                frontage: frontage ? parseFloat(frontage) : null,
+                floors: floors ? parseInt(floors) : null,
+                mapsLink,
+                createdById: session.user.id,
+                status: "NEW",
+            },
+            include: { createdBy: { select: { name: true } } },
+        });
+
+        await prisma.auditLog.create({
+            data: {
+                siteId: site.id,
+                userId: session.user.id,
+                action: "CREATE",
+                description: `Site "${site.name}" được tạo mới`,
+            },
+        });
+
+        return NextResponse.json(site, { status: 201 });
+    } catch (error: any) {
+        console.error("Error creating site:", error);
+        return NextResponse.json({ error: "Lỗi server khi tạo mặt bằng: " + error.message }, { status: 500 });
     }
-
-    const site = await prisma.site.create({
-        data: {
-            name, address, ward, district, city, siteType, description,
-            rentPrice: rentPrice ? parseFloat(rentPrice) : null,
-            rentUnit, rentType,
-            floorArea: floorArea ? parseFloat(floorArea) : null,
-            frontage: frontage ? parseFloat(frontage) : null,
-            floors: floors ? parseInt(floors) : null,
-            mapsLink,
-            createdById: session.user.id,
-            status: "NEW",
-        },
-        include: { createdBy: { select: { name: true } } },
-    });
-
-    await prisma.auditLog.create({
-        data: {
-            siteId: site.id,
-            userId: session.user.id,
-            action: "CREATE",
-            description: `Site "${site.name}" được tạo mới`,
-        },
-    });
-
-    return NextResponse.json(site, { status: 201 });
 }

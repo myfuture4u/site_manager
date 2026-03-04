@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { X, Save, Loader2 } from "lucide-react";
 import { SITE_TYPE_LABELS, RENT_TYPE_LABELS } from "@/lib/utils";
+import toast from "react-hot-toast";
 
 interface SiteFormProps {
     onClose: () => void;
@@ -12,6 +13,13 @@ interface SiteFormProps {
 export default function SiteForm({ onClose, onSuccess, initialData }: SiteFormProps) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            setSelectedFiles(Array.from(e.target.files));
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -32,14 +40,40 @@ export default function SiteForm({ onClose, onSuccess, initialData }: SiteFormPr
             });
 
             if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error || "Có lỗi xảy ra");
+                let errorMessage = "Có lỗi xảy ra";
+                const contentType = res.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {
+                    const err = await res.json();
+                    errorMessage = err.error || errorMessage;
+                } else {
+                    const text = await res.text();
+                    errorMessage = text || errorMessage;
+                }
+                throw new Error(errorMessage);
             }
 
+            const savedSite = await res.json();
+
+            // Upload files if any
+            if (selectedFiles.length > 0) {
+                toast.loading("Đang tải dữ liệu đính kèm...", { id: "uploading-files" });
+                for (let i = 0; i < selectedFiles.length; i++) {
+                    const fileData = new FormData();
+                    fileData.append("file", selectedFiles[i]);
+                    await fetch(`/api/sites/${savedSite.id}/attachments`, {
+                        method: "POST",
+                        body: fileData
+                    });
+                }
+                toast.dismiss("uploading-files");
+            }
+
+            toast.success(initialData ? "Cập nhật mặt bằng thành công" : "Tạo mới mặt bằng thành công");
             onSuccess();
             onClose();
         } catch (err: any) {
             setError(err.message);
+            toast.error(err.message);
         } finally {
             setLoading(false);
         }
@@ -74,8 +108,18 @@ export default function SiteForm({ onClose, onSuccess, initialData }: SiteFormPr
                         </div>
 
                         <div className="md:col-span-2">
-                            <label className="label">Địa chỉ *</label>
-                            <input name="address" defaultValue={initialData?.address} required className="input-field" placeholder="Số nhà, tên đường..." />
+                            <label className="label">Số nhà / Địa chỉ chi tiết *</label>
+                            <input name="address" defaultValue={initialData?.address} required className="input-field" placeholder="Ví dụ: 123 Toà nhà ABC..." />
+                        </div>
+
+                        <div>
+                            <label className="label">Đường</label>
+                            <input name="street" defaultValue={initialData?.street} className="input-field" placeholder="Tên đường..." />
+                        </div>
+
+                        <div>
+                            <label className="label">Phường/Xã</label>
+                            <input name="ward" defaultValue={initialData?.ward} className="input-field" placeholder="Tên phường/xã..." />
                         </div>
 
                         <div>
@@ -133,11 +177,31 @@ export default function SiteForm({ onClose, onSuccess, initialData }: SiteFormPr
                                 name="mapsLink"
                                 type="url"
                                 defaultValue={initialData?.mapsLink}
-                                className="input-field"
+                                className="input-field border-blue-500/50 bg-blue-500/5 focus:border-blue-400 focus:bg-transparent transition-all"
                                 placeholder="https://maps.google.com/..."
                             />
                             <p className="text-[10px] text-zinc-500 mt-1">Dán đường dẫn Google Maps của mặt bằng để dễ dàng xem vị trí sau này.</p>
                         </div>
+
+                        {!initialData && (
+                            <div className="md:col-span-2 pt-2 border-t border-zinc-800">
+                                <label className="label">Đính kèm hình ảnh/tài liệu (Tùy chọn)</label>
+                                <input
+                                    type="file"
+                                    multiple
+                                    onChange={handleFileChange}
+                                    className="block w-full text-sm text-zinc-400
+                                        file:mr-4 file:py-2 file:px-4
+                                        file:rounded-full file:border-0
+                                        file:text-xs file:font-semibold
+                                        file:bg-zinc-800 file:text-white
+                                        hover:file:bg-zinc-700 transition-colors"
+                                />
+                                {selectedFiles.length > 0 && (
+                                    <p className="text-xs text-blue-400 mt-2">Đã chọn {selectedFiles.length} tệp.</p>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </form>
 

@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import Link from "next/link";
 import {
     MapPin,
     Clock,
@@ -80,22 +81,22 @@ export default async function DashboardPage() {
 
                     <div className="space-y-6">
                         {recentLogs.map((log: any) => (
-                            <div key={log.id} className="flex gap-4 relative">
+                            <Link href={`/dashboard/sites/${log.siteId}`} key={log.id} className="flex gap-4 relative group hover:bg-zinc-800/50 p-2 -mx-2 rounded-xl transition-colors">
                                 <div className="flex flex-col items-center">
-                                    <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 z-10 text-zinc-400">
+                                    <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 z-10 text-zinc-400 group-hover:bg-zinc-700 group-hover:text-blue-400 transition-colors">
                                         {log.action === 'CREATE' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
                                     </div>
                                     <div className="w-px h-full bg-zinc-800 absolute top-8"></div>
                                 </div>
-                                <div className="pb-4">
+                                <div className="pb-4 pt-1">
                                     <p className="text-sm text-zinc-300">
-                                        <span className="font-semibold text-white">{log.user.name}</span>
+                                        <span className="font-semibold text-white group-hover:text-blue-400 transition-colors">{log.user.name}</span>
                                         {" "}{log.description}
                                         {log.site && <span className="text-blue-400 font-medium"> tại {log.site.name}</span>}
                                     </p>
                                     <p className="text-xs text-zinc-500 mt-1">{formatDate(log.createdAt)}</p>
                                 </div>
-                            </div>
+                            </Link>
                         ))}
                         {recentLogs.length === 0 && (
                             <p className="text-center text-zinc-500 py-8">Chưa có hoạt động nào được ghi lại.</p>
