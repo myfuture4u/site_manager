@@ -60,7 +60,7 @@ export default function SiteForm({ onClose, onSuccess, initialData }: SiteFormPr
                     </button>
                 </header>
 
-                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+                <form id="site-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
                     {error && (
                         <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
                             {error}
@@ -124,6 +124,20 @@ export default function SiteForm({ onClose, onSuccess, initialData }: SiteFormPr
                             <label className="label">Diện tích sàn (m2)</label>
                             <input name="floorArea" defaultValue={initialData?.floorArea} type="number" step="0.1" className="input-field" />
                         </div>
+
+                        <div className="md:col-span-2">
+                            <label className="label flex items-center gap-1">
+                                Google Maps Link
+                            </label>
+                            <input
+                                name="mapsLink"
+                                type="url"
+                                defaultValue={initialData?.mapsLink}
+                                className="input-field"
+                                placeholder="https://maps.google.com/..."
+                            />
+                            <p className="text-[10px] text-zinc-500 mt-1">Dán đường dẫn Google Maps của mặt bằng để dễ dàng xem vị trí sau này.</p>
+                        </div>
                     </div>
                 </form>
 
@@ -140,8 +154,6 @@ export default function SiteForm({ onClose, onSuccess, initialData }: SiteFormPr
                     </button>
                 </footer>
             </div>
-            {/* Form identifier link */}
-            <script dangerouslySetInnerHTML={{ __html: `document.querySelector('form').id = 'site-form';` }} />
         </div>
     );
 }

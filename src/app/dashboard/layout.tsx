@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import Sidebar from "@/components/Sidebar";
+import DashboardLayoutClient from "./DashboardLayoutClient";
 
 export default async function DashboardLayout({
     children,
@@ -12,11 +12,8 @@ export default async function DashboardLayout({
     if (!session) redirect("/login");
 
     return (
-        <div style={{ display: "flex", minHeight: "100vh" }}>
-            <Sidebar />
-            <main style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
-                {children}
-            </main>
-        </div>
+        <DashboardLayoutClient>
+            {children}
+        </DashboardLayoutClient>
     );
 }

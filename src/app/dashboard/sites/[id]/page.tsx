@@ -29,6 +29,7 @@ import {
 import SiteActions from "@/components/SiteActions";
 import CommentSection from "@/components/CommentSection";
 import AttachmentSection from "@/components/AttachmentSection";
+import SiteAuditLogs from "@/components/SiteAuditLogs";
 
 export default async function SiteDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const session = await getServerSession(authOptions);
@@ -138,38 +139,7 @@ export default async function SiteDetailsPage({ params }: { params: Promise<{ id
                         </div>
                     </div>
 
-                    <div className="glass-card p-6 border-l-4 border-l-blue-500">
-                        <h3 className="text-sm font-semibold text-white mb-4 uppercase tracking-wider">Lịch sử bản ghi</h3>
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-zinc-800 text-zinc-400">
-                                    <User size={16} />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-tighter">Người khảo sát</p>
-                                    <p className="text-xs text-white">{site.createdBy.name}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-zinc-800 text-zinc-400">
-                                    <Calendar size={16} />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-tighter">Ngày tạo</p>
-                                    <p className="text-xs text-white">{formatDate(site.createdAt)}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-zinc-800 text-zinc-400">
-                                    <Clock size={16} />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-tighter">Cập nhật cuối</p>
-                                    <p className="text-xs text-white">{formatDate(site.updatedAt)}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <SiteAuditLogs logs={site.auditLogs} />
                 </aside>
             </div>
         </div>

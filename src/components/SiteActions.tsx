@@ -4,12 +4,16 @@ import { Edit2, Loader2, ChevronDown } from "lucide-react";
 import { STATUS_LABELS, STATUS_COLORS } from "@/lib/utils";
 import SiteForm from "./SiteForm";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 interface SiteActionsProps {
     site: any;
 }
 
 export default function SiteActions({ site }: SiteActionsProps) {
+    const { data: session } = useSession();
+    const role = session?.user?.role as string;
+
     const [showForm, setShowForm] = useState(false);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
@@ -35,6 +39,8 @@ export default function SiteActions({ site }: SiteActionsProps) {
             setLoading(false);
         }
     };
+
+    if (role !== "ADMIN" && role !== "SITE_TEAM") return null;
 
     return (
         <div className="flex items-center gap-3">

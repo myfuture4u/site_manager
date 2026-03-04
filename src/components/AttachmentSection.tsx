@@ -1,7 +1,9 @@
 "use client";
 import { useState, useRef } from "react";
-import { Paperclip, Loader2, X, Upload } from "lucide-react";
+import { Paperclip, Loader2, X, Upload, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { useSession } from "next-auth/react";
 
 interface AttachmentSectionProps {
     siteId: string;
@@ -9,7 +11,11 @@ interface AttachmentSectionProps {
 }
 
 export default function AttachmentSection({ siteId, attachments }: AttachmentSectionProps) {
+    const { data: session } = useSession();
+    const role = session?.user?.role as string;
+
     const [uploading, setUploading] = useState(false);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
 
@@ -18,12 +24,8 @@ export default function AttachmentSection({ siteId, attachments }: AttachmentSec
         if (!file) return;
 
         setUploading(true);
+        const toastId = toast.loading("Đang tải tệp lên...");
         try {
-            // Note: This is an simplified implementation. 
-            // In a real app, you would upload to S3/Cloudinary first.
-            // For now, let's assume the API handles it or we use a data URL (not recommended for production).
-            // I'll simulate a fetch to the attachment API.
-
             const formData = new FormData();
             formData.append("file", file);
 
@@ -34,15 +36,38 @@ export default function AttachmentSection({ siteId, attachments }: AttachmentSec
 
             if (!res.ok) throw new Error("Tải lên thất bại");
 
+            toast.success("Tải tệp lên thành công", { id: toastId });
             router.refresh();
         } catch (error) {
             console.error(error);
-            alert("Có lỗi xảy ra khi tải lên tệp");
+            toast.error("Có lỗi xảy ra khi tải lên tệp", { id: toastId });
         } finally {
             setUploading(false);
             if (fileInputRef.current) fileInputRef.current.value = "";
         }
     };
+
+    const handleDelete = async (attachmentId: string) => {
+        if (!confirm("Bạn có chắc chắn muốn xóa tệp này không?")) return;
+
+        setDeletingId(attachmentId);
+        const toastId = toast.loading("Đang xóa tệp...");
+        try {
+            const res = await fetch(`/api/sites/${siteId}/attachments?attachmentId=${attachmentId}`, {
+                method: "DELETE",
+            });
+
+            if (!res.ok) throw new Error("Xóa tệp thất bại");
+
+            toast.success("Xóa tệp thành công", { id: toastId });
+            router.refresh();
+        } catch (error) {
+            console.error(error);
+            toast.error("Có lỗi xảy ra khi xóa tệp", { id: toastId });
+        } finally {
+            setDeletingId(null);
+        }
+    }
 
     return (
         <section className="glass-card p-6">
@@ -51,20 +76,25 @@ export default function AttachmentSection({ siteId, attachments }: AttachmentSec
                     <Paperclip size={20} className="text-blue-400" />
                     Tài liệu & Hình ảnh ({attachments.length})
                 </h2>
-                <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="text-sm font-medium text-blue-400 hover:text-blue-300 flex items-center gap-1 disabled:opacity-50"
-                >
-                    {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                    Tải lên
-                </button>
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileUpload}
-                    className="hidden"
-                />
+                {(role === "ADMIN" || role === "SITE_TEAM") && (
+                    <>
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploading}
+                            className="text-sm font-medium text-blue-400 hover:text-blue-300 flex items-center gap-1 disabled:opacity-50"
+                        >
+                            {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                            Tải lên
+                        </button>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileUpload}
+                            className="hidden"
+                            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                        />
+                    </>
+                )}
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -82,13 +112,25 @@ export default function AttachmentSection({ siteId, attachments }: AttachmentSec
                                 <p className="text-[10px] text-zinc-500 text-center line-clamp-2">{file.fileName}</p>
                             </div>
                         )}
-                        <a
-                            href={file.fileUrl}
-                            target="_blank"
-                            className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                        >
-                            <p className="text-[10px] text-white font-medium uppercase tracking-widest">Xem file</p>
-                        </a>
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
+                            <a
+                                href={file.fileUrl}
+                                target="_blank"
+                                className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-medium uppercase tracking-widest rounded transition-colors"
+                            >
+                                Xem file
+                            </a>
+                            {(role === "ADMIN" || role === "SITE_TEAM") && (
+                                <button
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(file.id); }}
+                                    disabled={deletingId === file.id}
+                                    className="px-3 py-1.5 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/50 text-[10px] font-medium uppercase tracking-widest rounded transition-colors flex items-center gap-1"
+                                >
+                                    {deletingId === file.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                                    Xóa
+                                </button>
+                            )}
+                        </div>
                     </div>
                 ))}
                 {attachments.length === 0 && (

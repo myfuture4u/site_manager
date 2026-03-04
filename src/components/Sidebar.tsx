@@ -24,40 +24,23 @@ export default function Sidebar() {
     const role = session?.user?.role ?? "";
 
     return (
-        <aside
-            style={{
-                width: "240px",
-                minHeight: "100vh",
-                background: "var(--bg-secondary)",
-                borderRight: "1px solid var(--border)",
-                display: "flex",
-                flexDirection: "column",
-                padding: "1.25rem",
-                flexShrink: 0,
-            }}
-        >
+        <aside className="w-[240px] h-full min-h-screen bg-[var(--bg-secondary)] border-r border-[var(--border)] flex flex-col p-5 shrink-0">
             {/* Logo */}
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "2rem", padding: "0.25rem 0" }}>
-                <div style={{
-                    width: "40px", height: "40px", borderRadius: "10px",
-                    background: "linear-gradient(135deg, #3b82f6, #06b6d4)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    boxShadow: "0 4px 16px rgba(59,130,246,0.3)",
-                    flexShrink: 0,
-                }}>
-                    <Building2 size={22} color="white" />
+            <div className="flex items-center gap-3 mb-8 py-1">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-[0_4px_16px_rgba(59,130,246,0.3)] shrink-0">
+                    <Building2 size={22} className="text-white" />
                 </div>
                 <div>
-                    <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text-primary)", lineHeight: 1.2 }}>
+                    <div className="font-bold text-[0.9rem] text-[var(--text-primary)] leading-tight">
                         Site Manager
                     </div>
-                    <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>QSR Vietnam</div>
+                    <div className="text-[0.7rem] text-[var(--text-muted)]">QSR Vietnam</div>
                 </div>
             </div>
 
             {/* Nav */}
-            <nav style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                <p style={{ fontSize: "0.7rem", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 0.5rem 0.5rem" }}>
+            <nav className="flex-1 flex flex-col gap-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
+                <p className="text-[0.7rem] font-semibold text-[var(--text-muted)] uppercase tracking-wider ml-2 mb-2">
                     Menu
                 </p>
                 {navItems
@@ -71,7 +54,7 @@ export default function Sidebar() {
                                 className={`sidebar-link ${active ? "active" : ""}`}
                             >
                                 <item.icon size={18} />
-                                <span style={{ flex: 1 }}>{item.label}</span>
+                                <span className="flex-1">{item.label}</span>
                                 {active && <ChevronRight size={14} />}
                             </Link>
                         );
@@ -79,29 +62,23 @@ export default function Sidebar() {
             </nav>
 
             {/* User Info & Logout */}
-            <div style={{ borderTop: "1px solid var(--border)", paddingTop: "1rem", marginTop: "1rem" }}>
+            <div className="border-t border-[var(--border)] pt-4 mt-4">
                 {session?.user && (
-                    <div style={{ marginBottom: "0.75rem", padding: "0.75rem", background: "var(--bg-card)", borderRadius: "8px" }}>
-                        <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div className="mb-3 p-3 bg-[var(--bg-card)] rounded-lg">
+                        <div className="text-[0.8rem] font-semibold text-[var(--text-primary)] truncate">
                             {session.user.name}
                         </div>
-                        <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <div className="text-[0.7rem] text-[var(--text-muted)] truncate mb-1">
                             {session.user.email}
                         </div>
-                        <span style={{
-                            display: "inline-block", marginTop: "0.35rem", padding: "0.15rem 0.5rem",
-                            borderRadius: "999px", fontSize: "0.65rem", fontWeight: 600,
-                            background: "rgba(59,130,246,0.2)", color: "#60a5fa",
-                            border: "1px solid rgba(59,130,246,0.3)",
-                        }}>
+                        <span className="inline-block px-2 py-0.5 rounded-full text-[0.65rem] font-semibold bg-blue-500/20 text-blue-400 border border-blue-500/30">
                             {ROLE_LABELS[role] || role}
                         </span>
                     </div>
                 )}
                 <button
-                    className="sidebar-link"
+                    className="sidebar-link w-full border-none bg-transparent justify-start hover:text-red-400 hover:bg-red-500/10 transition-colors"
                     onClick={() => signOut({ callbackUrl: "/login" })}
-                    style={{ width: "100%", background: "none", border: "none", color: "var(--text-secondary)" }}
                 >
                     <LogOut size={18} />
                     <span>Đăng xuất</span>

@@ -7,7 +7,8 @@ const prisma = new PrismaClient({
 });
 
 async function main() {
-    const password = await bcrypt.hash('admin123', 12);
+    const adminPassword = await bcrypt.hash('admin123', 12);
+    const commonPassword = await bcrypt.hash('123456', 12);
 
     // Create Admin
     const admin = await prisma.user.upsert({
@@ -16,8 +17,47 @@ async function main() {
         create: {
             email: 'admin@qsrvietnam.com',
             name: 'Hoai Nam Le',
-            password: password,
+            password: adminPassword,
             role: 'ADMIN',
+            isActive: true,
+        },
+    });
+
+    // Create Site Manager
+    await prisma.user.upsert({
+        where: { email: 'huong.h.vo@qsrvietnam.com' },
+        update: {},
+        create: {
+            email: 'huong.h.vo@qsrvietnam.com',
+            name: 'Hương Võ',
+            password: commonPassword,
+            role: 'SITE_TEAM',
+            isActive: true,
+        },
+    });
+
+    // Create COO (Admin/Site Team equivalent)
+    await prisma.user.upsert({
+        where: { email: 'nam.h.le@qsrvietnam.com' },
+        update: {},
+        create: {
+            email: 'nam.h.le@qsrvietnam.com',
+            name: 'Nam Lê',
+            password: commonPassword,
+            role: 'ADMIN',
+            isActive: true,
+        },
+    });
+
+    // Create Brand Team
+    await prisma.user.upsert({
+        where: { email: 'thuong.t.pham@qsrvietnam.com' },
+        update: {},
+        create: {
+            email: 'thuong.t.pham@qsrvietnam.com',
+            name: 'Thương Phạm',
+            password: commonPassword,
+            role: 'BRAND_TEAM',
             isActive: true,
         },
     });

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import {
     Search,
     Filter,
@@ -18,6 +19,9 @@ import { STATUS_LABELS, STATUS_COLORS, SITE_TYPE_LABELS } from "@/lib/utils";
 import SiteForm from "@/components/SiteForm";
 
 export default function SitesPage() {
+    const { data: session } = useSession();
+    const role = session?.user?.role as string;
+
     const [sites, setSites] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -62,10 +66,12 @@ export default function SitesPage() {
                     <h1 className="text-2xl font-bold text-white mb-1">Quản lý mặt bằng</h1>
                     <p className="text-zinc-400">Danh sách các địa điểm đang được theo dõi và đánh giá.</p>
                 </div>
-                <button onClick={() => setShowForm(true)} className="btn-primary" type="button">
-                    <Plus size={18} />
-                    <span>Thêm mặt bằng</span>
-                </button>
+                {(role === "ADMIN" || role === "SITE_TEAM") && (
+                    <button onClick={() => setShowForm(true)} className="btn-primary" type="button">
+                        <Plus size={18} />
+                        <span>Thêm mặt bằng</span>
+                    </button>
+                )}
             </header>
 
             {/* Filters */}
