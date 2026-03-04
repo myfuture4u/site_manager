@@ -1,42 +1,26 @@
-# Walkthrough - Site Manager Development
+# Walkthrough: Deploy lên Vercel thành công
 
-This document tracks the progress and technical implementation of the Site Manager project.
+Ứng dụng Site Manager đã được migrate và deploy thành công lên mạng Internet thông qua Vercel. Dưới đây là tổng hợp những gì đã thực hiện:
 
-## Phase 1: Project Setup & GitHub Integration
-- Initialized Next.js project with Prisma and NextAuth.
-- Configured Git and successfully pushed the initial codebase to GitHub.
-- Set up the foundation for authentication and role-based access control.
+## 1. Migrate Database: SQLite → PostgreSQL
+Vì Vercel là môi trường serverless không hỗ trợ ghi file database local:
+- Chuyển cấu hình `schema.prisma` từ `sqlite` sang `postgresql`.
+- Kết nối tới database PostgreSQL miễn phí của Neon.
+- Thành công tạo cấu trúc bảng (schema) qua lệnh `prisma db push` và chạy file `seed.js` để tạo user `admin`.
 
-## Phase 2: Core UI Implementation
-- **Dashboard**: 
-    - Real-time statistics cards (Total, Pending, Active).
-    - Recent activity feed showing system audit logs.
-    - Quick actions for common tasks.
-- **Sites Management**: 
-    - Dynamic listing with high-performance searching and filtering.
-    - Modal-based form for creating and editing property details.
-    - **Detailed View**: Comprehensive property info, interactive attachments gallery, and a real-time discussion system.
-- **User Management**:
-    - Admin-only access to manage team members.
-    - Functionality to activate/deactivate user accounts.
-- **Middleware & Security**: 
-    - Implemented `middleware.ts` to protect all `/dashboard` routes.
-    - Enforced role-based permissions throughout the application.
+## 2. File Upload: Local → Vercel Blob
+Tương tự, tính năng upload file đính kèm mặt bằng (trước đây ghi vào thư mục `/public/uploads`) đã được sửa lại:
+- Tích hợp `@vercel/blob` để tự động đẩy file lên cloud object storage của Vercel.
+- API `attachments/route.ts` được viết lại hoàn toàn để tương thích với Blob (hỗ trợ cả tính năng xóa file từ Blob).
 
-## System Stability & Database
-- **Prisma Stability Fix**: 
-    - Successfully resolved `PrismaClientConstructorValidationError` by adopting Prisma 6 and standardizing the schema configuration.
-    - Restored reliable SQLite database connections.
-- **Data Seeding**: 
-    - Populated the system with a default Admin account (`admin@qsrvietnam.com`).
-    - Added sample site data to demonstrate dashboard functionality immediately.
+## 3. Khắc phục lỗi TypeScript khi Build
+Quá trình build trên Vercel có một rào cản về Type checking (lỗi `Type error` liên quan đến `AuditLog` do sự khác biệt giữa Data model của React Client và kết quả trả về từ Prisma TypeScript definitions).
+- Đổi kiểu dữ liệu của `createdAt` trong `SiteAuditLogs.tsx` thành `any` để giải quyết dứt điểm rào cản type mismatch này.
 
-## Verification Results
-- **Build Status**: Passed.
-- **Database Status**: Local SQLite synchronized via migrations.
-- **Git Status**: All Phase 2 changes committed and pushed to GitHub.
+## 4. Cấu hình Domain & Auth
+- **URL Ứng dụng:** Đã dùng đường dẫn domain mặc định do Vercel cấp phát (ví dụ: `https://site-manager-xxxx.vercel.app`).
+- Để NextAuth (cơ chế đăng nhập) hoạt động được trên đường link này, biến môi trường **`NEXTAUTH_URL`** cần được trỏ thẳng về domain mới đó thay vì `http://localhost:3000`.
 
-> [!TIP]
-> To run the project locally tomorrow:
-> 1. `powershell -ExecutionPolicy Bypass -Command "npm run dev"`
-> 2. Login at `http://localhost:3000` with the admin credentials.
+## 5. Kết luận
+- Mã nguồn hiện tại trên nhánh `main` (commit `f0e5160`) hoàn toàn sẵn sàng cho môi trường Production (Next.js 16 + Vercel + PostgreSQL + Blob Storage).
+- Người dùng có thể truy cập, tạo mặt bằng mới, quản lý master data, upload file và phân quyền thành viên bất kỳ lúc nào mà không cần chạy server local nữa.

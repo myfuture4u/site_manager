@@ -1,33 +1,84 @@
-# Implementation Plan History
+# Deploy Site Manager lên Vercel
 
-## Kế hoạch triển khai (Implementation Plan) - Vòng 2 (04/03/2026)
-**Trạng thái**: Hoàn thành (Completed)
-Mục tiêu: Hoàn thiện các góp ý từ lần báo cáo gần nhất về giao diện (link, thumbnail, lọc thời gian) và tính năng nâng cao (Master Data).
+Ứng dụng hiện dùng **SQLite** (file local) và **lưu file upload vào local filesystem** — cả hai đều không hoạt động được trên Vercel (serverless, stateless). Cần migrate trước khi deploy.
 
-### 1. Dashboard - Clickable "Hoạt động gần đây"
-- Sửa đổi UI của phần Lịch sử thay đổi (AuditLogs) trong Dashboard để toàn bộ một dòng hoạt động có thể bấm vào được (Link) -> dẫn tới `/dashboard/sites/[siteId]`.
+## Tóm tắt thay đổi cần làm
 
-### 2. Sửa UI Upload cho Brand Team
-- Hủy bỏ các logic chặn nút "Tải lên" đối với role Brand Team/Other trong `AttachmentSection.tsx`. Cấp quyền cho toàn bộ User đã đăng nhập đều có thể thấy và bấm nút "Tải lên".
+| # | Vấn đề | Giải pháp | Trạng thái |
+|---|--------|-----------|------------|
+| 1 | SQLite không chạy trên Vercel | Migrate sang **PostgreSQL** (Neon.tech) | ✅ Hoàn thành |
+| 2 | File upload lưu local | Dùng **Vercel Blob** | ✅ Hoàn thành |
+| 3 | Environment variables | Cấu hình trên Vercel dashboard | ✅ Hoàn thành |
+| 4 | Custom domain | Trỏ domain công ty | ⏳ Tạm hoãn (Dùng Vercel domain) |
 
-### 3. Bổ sung "Đường" (Street) & "Phường/Xã" (Ward)
-- Thêm trường `street` vào model `Site`. `ward` hiện đã có sẵn. Thêm 2 input cho Tên đường và Phường/Xã vào form tạo mới/cập nhật.
-- Thêm `MasterData` model để chuẩn bị cho Task 6. Cập nhật logic API để nhận thêm trường `street` khi lưu.
-
-### 4. Hiển thị Thumbnail trong Danh sách
-- API load danh sách Site cần include 1 ảnh đầu tiên làm đại diện.
-- Thêm một cột hình nhỏ trong bảng mặt bằng.
-
-### 5. Bộ lọc (Filter) theo thời gian
-- Thêm filter dropdown chọn khoảng thời gian (7 ngày qua, tháng trước...). 
-
-### 6. Quản lý Master Data
-- Thiết kế CSDL cho MasterData lưu trữ danh mục.
-- Tạo màn hình cài đặt danh mục cho Admin.
+> [!IMPORTANT]
+> Anh sẽ cần tự làm một số bước cần tài khoản trên trình duyệt (tạo DB Neon, kết nối Vercel với GitHub repo). Em sẽ hướng dẫn từng bước rõ ràng.
 
 ---
 
-## Kế hoạch triển khai (Implementation Plan) - Vòng 1 (04/03/2026)
-* Sửa lỗi Hydration Error.
-* Thêm Edit User cho Admin.
-* Upload Hình ảnh ngay trong Form tạo mới mặt bằng.
+## Proposed Changes
+
+### 1. Database — SQLite → PostgreSQL (Neon)
+
+**[DONE] Anh cần làm (browser):**
+- Đăng ký / đăng nhập tại [neon.tech](https://neon.tech) → tạo project mới → copy **Connection String**
+
+**[DONE] Em sẽ làm (code):**
+
+#### [MODIFY] [schema.prisma](file:///c:/SRC/site_manager/prisma/schema.prisma)
+- Đổi `provider = "sqlite"` → `provider = "postgresql"`
+
+#### [MODIFY] [package.json](file:///c:/SRC/site_manager/package.json)
+- Thêm `"@vercel/blob": "latest"` vào dependencies
+
+#### [MODIFY] [.env](file:///c:/SRC/site_manager/.env)
+- Đổi `DATABASE_URL` sang PostgreSQL connection string (local dev dùng Neon URL luôn cho tiện)
+
+---
+
+### 2. File Upload — Local → Vercel Blob [DONE]
+
+#### [MODIFY] [attachments/route.ts](file:///c:/SRC/site_manager/src/app/api/sites/[id]/attachments/route.ts)
+- Đã thay thế logic lưu local bằng `@vercel/blob` thông qua lệnh `put()`.
+- FileUrl hiện tại trỏ trực tiếp đến Vercel Storage.
+
+---
+
+### 3. Vercel Configuration [DONE]
+
+#### [NEW] [vercel.json](file:///c:/SRC/site_manager/vercel.json)
+- Đã cấu hình lệnh build bao gồm `prisma generate` để đảm bảo client luôn khớp với schema mới nhất trên Vercel.
+
+---
+
+### 4. Environment Variables trên Vercel Dashboard
+
+Sau khi deploy, anh cần set các biến sau trong **Vercel → Project → Settings → Environment Variables:**
+
+| Key | Value |
+|-----|-------|
+| `DATABASE_URL` | PostgreSQL URL từ Neon |
+| `NEXTAUTH_SECRET` | Một chuỗi random dài (em generate cho) |
+| `NEXTAUTH_URL` | `https://site-manager.qsrvietnam.app` |
+| `ALLOWED_EMAIL_DOMAIN` | `qsrvietnam.com` |
+| `BLOB_READ_WRITE_TOKEN` | Token từ Vercel Blob (tạo trong Vercel Storage) |
+
+---
+
+### 5. Domain [IN PROGRESS]
+
+- Hiện tại đang sử dụng domain mặc định của Vercel theo yêu cầu của anh để test nhanh.
+- Khi nào anh muốn trỏ `site-manager.qsrvietnam.app`, em sẽ hỗ trợ cập nhật `NEXTAUTH_URL` và cấu hình bản ghi DNS.
+
+---
+
+## Verification Plan
+
+### Tự động
+- `npx prisma migrate deploy` — chạy migration lên PostgreSQL (em chạy)
+- `npm run build` — verify không có compilation error (em chạy)
+
+### Kiểm tra thủ công (anh kiểm tra)
+1. Truy cập `https://site-manager.qsrvietnam.app` → trang login hiện ra
+2. Đăng nhập bằng tài khoản admin → vào dashboard thành công
+3. Upload một file ảnh vào một site → file hiển thị bình thường (từ Vercel Blob URL)
