@@ -10,7 +10,7 @@ interface AuditLog {
     oldValue: string | null;
     newValue: string | null;
     description: string | null;
-    createdAt: string;
+    createdAt: any;
     user: {
         name: string;
     };
