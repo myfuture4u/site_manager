@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { put, del } from "@vercel/blob";
 
 export async function POST(
     req: NextRequest,
@@ -11,7 +10,6 @@ export async function POST(
 ) {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    const role = session.user.role;
 
     const { id: siteId } = await params;
     const site = await prisma.site.findUnique({ where: { id: siteId } });
@@ -21,24 +19,16 @@ export async function POST(
     const file = formData.get("file") as File;
     if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const safeName = `uploads/${siteId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    const blob = await put(safeName, file, { access: "public" });
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads", siteId);
-    await mkdir(uploadDir, { recursive: true });
-
-    const safeName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-    const filePath = path.join(uploadDir, safeName);
-    await writeFile(filePath, buffer);
-
-    const fileUrl = `/uploads/${siteId}/${safeName}`;
     const isImage = file.type.startsWith("image/");
 
     const attachment = await prisma.siteAttachment.create({
         data: {
             siteId,
             fileName: file.name,
-            fileUrl,
+            fileUrl: blob.url,
             fileType: isImage ? "image" : "document",
             fileSize: file.size,
             uploadedById: session.user.id,
@@ -74,9 +64,17 @@ export async function DELETE(
     const attachment = await prisma.siteAttachment.findUnique({ where: { id: attachmentId } });
     if (!attachment || attachment.siteId !== siteId) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    // Only Admin, Site Team, or the uploader themselves can delete
     if (role !== "ADMIN" && role !== "SITE_TEAM" && attachment.uploadedById !== session.user.id) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Delete from Vercel Blob if URL is a blob URL
+    try {
+        if (attachment.fileUrl.includes("blob.vercel-storage.com")) {
+            await del(attachment.fileUrl);
+        }
+    } catch (_) {
+        // Non-blocking: continue even if blob delete fails
     }
 
     await prisma.siteAttachment.delete({ where: { id: attachmentId } });
