@@ -1,16 +1,27 @@
 "use client";
-import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, Search, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Edit2, Trash2, Search, Loader2, Download, Upload } from "lucide-react";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
+import * as XLSX from "xlsx";
 
 const DATA_TYPES = [
     { value: "CITY", label: "Tỉnh/Thành phố" },
     { value: "DISTRICT", label: "Quận/Huyện" },
     { value: "WARD", label: "Phường/Xã" },
     { value: "SITE_TYPE", label: "Loại hình mặt bằng" },
-    { value: "STATUS", label: "Trạng thái măt bằng" },
+    { value: "STATUS", label: "Trạng thái mặt bằng" },
+    { value: "ROLE", label: "Vai trò người dùng" },
 ];
+
+const PARENT_REQUIRED = ["WARD", "DISTRICT"];
+const HAS_PARENT = ["WARD", "DISTRICT"];
+
+function getExcelHeaders(type: string) {
+    const base = ["Giá trị (value) *", "Thứ tự (order)", "Trạng thái (isActive: TRUE/FALSE)"];
+    if (HAS_PARENT.includes(type)) return ["Giá trị (value) *", "Trực thuộc (parentValue)", ...base.slice(1)];
+    return base;
+}
 
 export default function MasterDataPage() {
     const { data: session } = useSession();
@@ -20,11 +31,14 @@ export default function MasterDataPage() {
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [importing, setImporting] = useState(false);
 
     // Modal state
     const [showModal, setShowModal] = useState(false);
     const [editingItem, setEditingItem] = useState<any>(null);
     const [formLoading, setFormLoading] = useState(false);
+
+    const importRef = useRef<HTMLInputElement>(null);
 
     const fetchData = async () => {
         setLoading(true);
@@ -89,6 +103,105 @@ export default function MasterDataPage() {
         }
     };
 
+    // ─── Excel Export ────────────────────────────────────────────────────────
+    const handleExport = () => {
+        const tabLabel = DATA_TYPES.find(t => t.value === activeTab)?.label ?? activeTab;
+
+        // Build worksheet rows
+        const rows = data.map(item => {
+            if (HAS_PARENT.includes(activeTab)) {
+                return {
+                    "Giá trị (value) *": item.value,
+                    "Trực thuộc (parentValue)": item.parentValue ?? "",
+                    "Thứ tự (order)": item.order,
+                    "Trạng thái (isActive: TRUE/FALSE)": item.isActive ? "TRUE" : "FALSE",
+                };
+            }
+            return {
+                "Giá trị (value) *": item.value,
+                "Thứ tự (order)": item.order,
+                "Trạng thái (isActive: TRUE/FALSE)": item.isActive ? "TRUE" : "FALSE",
+            };
+        });
+
+        // If no data, export an empty template
+        if (rows.length === 0) {
+            const headers = getExcelHeaders(activeTab);
+            rows.push(Object.fromEntries(headers.map(h => [h, ""])) as any);
+        }
+
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, tabLabel.slice(0, 31));
+
+        // Style header row width
+        const colWidths = Object.keys(rows[0]).map(k => ({ wch: Math.max(k.length, 20) }));
+        ws["!cols"] = colWidths;
+
+        XLSX.writeFile(wb, `master-data_${activeTab.toLowerCase()}.xlsx`);
+        toast.success(`Đã xuất file Excel cho "${tabLabel}"`);
+    };
+
+    // ─── Excel Import ────────────────────────────────────────────────────────
+    const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        e.target.value = ""; // reset input
+
+        setImporting(true);
+        const toastId = toast.loading("Đang đọc file Excel...");
+        try {
+            const buffer = await file.arrayBuffer();
+            const wb = XLSX.read(buffer);
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const rows: any[] = XLSX.utils.sheet_to_json(ws);
+
+            if (rows.length === 0) throw new Error("File Excel không có dữ liệu.");
+
+            toast.loading(`Đang nhập ${rows.length} dòng...`, { id: toastId });
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (const row of rows) {
+                const value =
+                    row["Giá trị (value) *"] ??
+                    row["value"] ??
+                    "";
+                if (!value) { errorCount++; continue; }
+
+                const parentValue =
+                    row["Trực thuộc (parentValue)"] ??
+                    row["parentValue"] ??
+                    null;
+
+                const order = parseInt(row["Thứ tự (order)"] ?? row["order"] ?? 0) || 0;
+
+                const isActiveRaw =
+                    row["Trạng thái (isActive: TRUE/FALSE)"] ??
+                    row["isActive"] ??
+                    "TRUE";
+                const isActive = String(isActiveRaw).toUpperCase() !== "FALSE";
+
+                const payload = { type: activeTab, value: String(value).trim(), parentValue: parentValue ? String(parentValue).trim() : null, order, isActive };
+
+                const res = await fetch("/api/master-data", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+                if (res.ok) successCount++; else errorCount++;
+            }
+
+            toast.success(`Nhập thành công ${successCount} dòng${errorCount > 0 ? `, ${errorCount} dòng lỗi` : ""}.`, { id: toastId });
+            fetchData();
+        } catch (err: any) {
+            toast.error(err.message ?? "Lỗi khi đọc file", { id: toastId });
+        } finally {
+            setImporting(false);
+        }
+    };
+
     if (role !== "ADMIN") return <div className="p-8">Không có quyền truy cập</div>;
 
     const filteredData = data.filter(item =>
@@ -103,13 +216,44 @@ export default function MasterDataPage() {
                     <h1 className="text-2xl font-bold text-white tracking-tight leading-tight">Dữ liệu chuẩn (Master Data)</h1>
                     <p className="text-zinc-400 mt-1">Cấu hình danh mục hệ thống để sử dụng tại các form nhập thông tin.</p>
                 </div>
-                <button
-                    className="btn-primary"
-                    onClick={() => { setEditingItem(null); setShowModal(true); }}
-                >
-                    <Plus size={18} />
-                    <span>Thêm mới</span>
-                </button>
+                <div className="flex items-center gap-2">
+                    {/* Import */}
+                    <input
+                        ref={importRef}
+                        type="file"
+                        accept=".xlsx,.xls,.csv"
+                        className="hidden"
+                        onChange={handleImport}
+                    />
+                    <button
+                        onClick={() => importRef.current?.click()}
+                        disabled={importing}
+                        className="btn-secondary flex items-center gap-2"
+                        title="Import từ Excel"
+                    >
+                        {importing ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                        <span>Import</span>
+                    </button>
+
+                    {/* Export */}
+                    <button
+                        onClick={handleExport}
+                        className="btn-secondary flex items-center gap-2"
+                        title="Xuất ra Excel"
+                    >
+                        <Download size={16} />
+                        <span>Export</span>
+                    </button>
+
+                    {/* Add new */}
+                    <button
+                        className="btn-primary flex items-center gap-2"
+                        onClick={() => { setEditingItem(null); setShowModal(true); }}
+                    >
+                        <Plus size={18} />
+                        <span>Thêm mới</span>
+                    </button>
+                </div>
             </header>
 
             {/* Tabs */}
@@ -119,8 +263,8 @@ export default function MasterDataPage() {
                         key={type.value}
                         onClick={() => setActiveTab(type.value)}
                         className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === type.value
-                                ? "border-blue-500 text-blue-400"
-                                : "border-transparent text-zinc-400 hover:text-zinc-300 hover:border-zinc-700"
+                            ? "border-blue-500 text-blue-400"
+                            : "border-transparent text-zinc-400 hover:text-zinc-300 hover:border-zinc-700"
                             }`}
                     >
                         {type.label}
@@ -130,15 +274,20 @@ export default function MasterDataPage() {
 
             {/* Content */}
             <div className="glass-card flex-1 flex flex-col overflow-hidden">
-                <div className="p-4 border-b border-zinc-800 relative">
-                    <Search className="absolute left-7 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-                    <input
-                        type="text"
-                        placeholder="Tìm kiếm..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="input-field pl-10 max-w-sm"
-                    />
+                <div className="p-4 border-b border-zinc-800 flex items-center justify-between gap-4">
+                    <div className="relative flex-1 max-w-sm">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
+                        <input
+                            type="text"
+                            placeholder="Tìm kiếm..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="input-field pl-9"
+                        />
+                    </div>
+                    <span className="text-xs text-zinc-500 whitespace-nowrap">
+                        {filteredData.length} mục
+                    </span>
                 </div>
 
                 <div className="flex-1 overflow-auto">
@@ -149,7 +298,7 @@ export default function MasterDataPage() {
                             <thead>
                                 <tr className="border-b border-zinc-800/50 bg-zinc-900/50">
                                     <th className="p-4 text-xs font-semibold text-zinc-500 uppercase">Giá trị</th>
-                                    {["WARD", "DISTRICT"].includes(activeTab) && (
+                                    {HAS_PARENT.includes(activeTab) && (
                                         <th className="p-4 text-xs font-semibold text-zinc-500 uppercase">Trực thuộc (Parent)</th>
                                     )}
                                     <th className="p-4 text-xs font-semibold text-zinc-500 uppercase text-center w-24">Thứ tự</th>
@@ -161,7 +310,7 @@ export default function MasterDataPage() {
                                 {filteredData.map(item => (
                                     <tr key={item.id} className="hover:bg-zinc-800/30 transition-colors group">
                                         <td className="p-4 text-sm font-medium text-zinc-200">{item.value}</td>
-                                        {["WARD", "DISTRICT"].includes(activeTab) && (
+                                        {HAS_PARENT.includes(activeTab) && (
                                             <td className="p-4 text-sm text-zinc-400">{item.parentValue || "—"}</td>
                                         )}
                                         <td className="p-4 text-sm text-zinc-400 text-center">{item.order}</td>
@@ -193,7 +342,7 @@ export default function MasterDataPage() {
                                 {filteredData.length === 0 && (
                                     <tr>
                                         <td colSpan={5} className="p-12 text-center text-zinc-500">
-                                            Chưa có dữ liệu cho mục này.
+                                            Chưa có dữ liệu cho mục này. Nhấn &quot;Thêm mới&quot; hoặc &quot;Import&quot; để bắt đầu.
                                         </td>
                                     </tr>
                                 )}
@@ -203,12 +352,17 @@ export default function MasterDataPage() {
                 </div>
             </div>
 
+            {/* Import hint */}
+            <p className="mt-3 text-[11px] text-zinc-600">
+                💡 Tip: Nhấn <strong className="text-zinc-500">Export</strong> để tải file Excel mẫu, điền dữ liệu rồi nhấn <strong className="text-zinc-500">Import</strong> để nhập hàng loạt.
+            </p>
+
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 fade-in">
                     <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl overflow-hidden scale-in">
                         <header className="p-5 border-b border-zinc-800 bg-zinc-900/50">
                             <h3 className="text-lg font-semibold text-white">
-                                {editingItem ? "Cập nhật dữ liệu" : "Thêm mới dữ liệu"}
+                                {editingItem ? "Cập nhật dữ liệu" : `Thêm mới — ${DATA_TYPES.find(t => t.value === activeTab)?.label}`}
                             </h3>
                         </header>
 
@@ -225,9 +379,9 @@ export default function MasterDataPage() {
                                 />
                             </div>
 
-                            {["WARD", "DISTRICT"].includes(activeTab) && (
+                            {PARENT_REQUIRED.includes(activeTab) && (
                                 <div>
-                                    <label className="label">Cấp trực thuộc (Parent - Tùy chọn)</label>
+                                    <label className="label">Cấp trực thuộc (Parent — Tùy chọn)</label>
                                     <input
                                         name="parentValue"
                                         defaultValue={editingItem?.parentValue || ""}
