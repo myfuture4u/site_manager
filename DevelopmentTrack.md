@@ -74,7 +74,17 @@ _File này dùng để theo dõi toàn bộ quá trình phát triển (track rec
 3. `Site_Manager` duyệt: 
     - Chuyển trạng thái Site thành "New Arrival" (hoặc trạng thái tương ứng).
     - Chủ động **chọn/tích** các phòng ban/Roles được phép nhìn thấy mặt bằng này (Ví dụ: Dành riêng cho brand ABC thì mở cho GM, Brand Team tương ứng...).
+    - **(Mới)** Có khả năng tìm kiếm và **chọn đích danh các cá nhân (User cụ thể)** để cấp quyền xem mặt bằng, kể cả khi họ không thuộc các Role được cấp phép.
+    - **(Mới)** Gắn Thẻ Thương hiệu (**Brand**) cho mặt bằng.
     - Bấm nút **"Submit Site"**.
-4. Lúc này những người thuộc Role được cấp phép mới:
+4. Lúc này những người thuộc Role hoặc Cá nhân được cấp phép mới:
     - Nhận được **Notification** (thông báo) về Site mới.
     - Được quyền truy cập để xem, bình luận, và upload hình ảnh/file.
+
+---
+
+## 🏢 Giai đoạn 5: Master Data Mở Rộng & Cấp Quyền Cá Nhân (Đã hoàn thành)
+- Thêm hạng mục quản lý **Thương hiệu (Brand)** vào trang cài đặt Master Data. Admin có thể tùy ý sửa chữa, thêm bớt thương hiệu của công ty.
+- Bổ sung thanh tìm kiếm `Users` vào Form duyệt (Submit/Edit) mặt bằng để `Site_Manager` và `Admin` cấp quyền truy cập vào xem Site riêng biệt cho 1 danh sách cá nhân.
+- Tự động gửi thông báo (Notification) trực tiếp và cấp quyền riêng rẽ song song với quyền xem theo Nhóm/Phòng ban.
+
