@@ -45,7 +45,9 @@ model Site {
   
   // Visibility and Workflow Fields
   isSubmitted      Boolean          @default(false)
-  visibleToRoles   String           @default("[]") // Store as JSON string array ["BOD", "BRAND_TEAM"] for SQLite fallback / easy parsing
+  visibleToRoles   String           @default("[]") // Store as JSON string array ["BOD", "BRAND_TEAM"]
+  visibleToUsers   String           @default("[]") // Store as JSON string array of user IDs
+  brand            String?          // To store the brand this site belongs to
   
   createdById      String
   createdAt        DateTime         @default(now())

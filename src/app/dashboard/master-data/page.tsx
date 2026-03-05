@@ -12,6 +12,7 @@ const DATA_TYPES = [
     { value: "SITE_TYPE", label: "Loại hình mặt bằng" },
     { value: "STATUS", label: "Trạng thái mặt bằng" },
     { value: "ROLE", label: "Vai trò người dùng" },
+    { value: "BRAND", label: "Thương hiệu" },
 ];
 
 const PARENT_REQUIRED = ["WARD", "DISTRICT"];

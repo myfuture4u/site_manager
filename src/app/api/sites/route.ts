@@ -48,21 +48,30 @@ export async function GET(req: NextRequest) {
     if (role === "ADMIN" || role === "SITE_MANAGER") {
         // Can see all sites
     } else if (role === "SITE_DEVELOPER") {
-        // Can see sites they created, OR sites that are submitted and visible to SITE_DEVELOPER
+        // Can see sites they created, OR sites that are submitted and visible to SITE_DEVELOPER, OR specific user assigned
         where.OR = [
             ...(where.OR ? where.OR as any[] : []),
             { createdById: userId },
             {
                 AND: [
                     { isSubmitted: true },
-                    { visibleToRoles: { contains: `"SITE_DEVELOPER"` } }
+                    {
+                        OR: [
+                            { visibleToRoles: { contains: `"SITE_DEVELOPER"` } },
+                            { visibleToUsers: { contains: `"${userId}"` } }
+                        ]
+                    }
                 ]
             }
         ];
     } else {
-        // Other roles can only see submitted sites where their role is in visibleToRoles
+        // Other roles can only see submitted sites where their role is in visibleToRoles OR their ID is in visibleToUsers
         where.isSubmitted = true;
-        where.visibleToRoles = { contains: `"${role}"` };
+        where.OR = [
+            ...(where.OR ? where.OR as any[] : []),
+            { visibleToRoles: { contains: `"${role}"` } },
+            { visibleToUsers: { contains: `"${userId}"` } }
+        ];
     }
 
 
@@ -98,7 +107,7 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { name, address, street, ward, district, city, siteType, description, rentPrice, rentUnit, rentType, floorArea, frontage, floors, mapsLink } = body;
+        const { name, address, street, ward, district, city, siteType, description, rentPrice, rentUnit, rentType, floorArea, frontage, floors, mapsLink, brand } = body;
 
         if (!name || !address || !city || !siteType) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -106,7 +115,7 @@ export async function POST(req: NextRequest) {
 
         const site = await prisma.site.create({
             data: {
-                name, address, street, ward, district, city, siteType, description,
+                name, address, street, ward, district, city, siteType, description, brand,
                 rentPrice: rentPrice ? parseFloat(rentPrice) : null,
                 rentUnit, rentType,
                 floorArea: floorArea ? parseFloat(floorArea) : null,

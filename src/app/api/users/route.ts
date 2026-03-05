@@ -8,7 +8,7 @@ const ALLOWED_DOMAIN = process.env.ALLOWED_EMAIL_DOMAIN || "qsrvietnam.com";
 
 export async function GET() {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== "ADMIN") {
+    if (!session || !["ADMIN", "SITE_MANAGER"].includes(session.user.role)) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

@@ -3,11 +3,13 @@ import { useState } from "react";
 import { X, Save, Loader2 } from "lucide-react";
 import { SITE_TYPE_LABELS, RENT_TYPE_LABELS } from "@/lib/utils";
 import toast from "react-hot-toast";
+import { Search } from "lucide-react";
 
 interface SiteFormProps {
     onClose: () => void;
     onSuccess: () => void;
     initialData?: any;
+    hideVisibility?: boolean; // Sometimes called from quick add, maybe we don't need it
 }
 
 export default function SiteForm({ onClose, onSuccess, initialData }: SiteFormProps) {
@@ -17,6 +19,31 @@ export default function SiteForm({ onClose, onSuccess, initialData }: SiteFormPr
     const [selectedRoles, setSelectedRoles] = useState<string[]>(
         initialData?.visibleToRoles ? JSON.parse(initialData.visibleToRoles) : []
     );
+    const [selectedUsers, setSelectedUsers] = useState<string[]>(
+        initialData?.visibleToUsers ? JSON.parse(initialData.visibleToUsers) : []
+    );
+
+    // States for options
+    const [brands, setBrands] = useState<any[]>([]);
+    const [usersList, setUsersList] = useState<any[]>([]);
+    const [userSearch, setUserSearch] = useState("");
+
+    // Fetch Brands and Users on mount
+    useState(() => {
+        // Fetch Brands
+        fetch("/api/master-data?type=BRAND")
+            .then(res => res.json())
+            .then(data => setBrands(data.filter((b: any) => b.isActive)))
+            .catch(console.error);
+
+        // Fetch Users for specific assignment
+        fetch("/api/users")
+            .then(res => res.json())
+            .then(data => {
+                if (!data.error) setUsersList(data.filter((u: any) => u.isActive));
+            })
+            .catch(console.error);
+    });
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -32,6 +59,7 @@ export default function SiteForm({ onClose, onSuccess, initialData }: SiteFormPr
         const formData = new FormData(e.currentTarget);
         const data = Object.fromEntries(formData.entries());
         data.visibleToRoles = JSON.stringify(selectedRoles);
+        data.visibleToUsers = JSON.stringify(selectedUsers);
 
         try {
             const url = initialData ? `/api/sites/${initialData.id}` : "/api/sites";
@@ -144,6 +172,16 @@ export default function SiteForm({ onClose, onSuccess, initialData }: SiteFormPr
                             </select>
                         </div>
 
+                        <div>
+                            <label className="label">Thương hiệu</label>
+                            <select name="brand" defaultValue={initialData?.brand || ""} className="select-field">
+                                <option value="">-- Không chỉ định --</option>
+                                {brands.map((b) => (
+                                    <option key={b.value} value={b.value}>{b.value}</option>
+                                ))}
+                            </select>
+                        </div>
+
                         <div className="md:col-span-2">
                             <label className="label">Mô tả chi tiết</label>
                             <textarea name="description" defaultValue={initialData?.description} className="input-field min-h-[100px]" placeholder="Các đặc điểm nổi bật, lưu ý..." />
@@ -207,25 +245,75 @@ export default function SiteForm({ onClose, onSuccess, initialData }: SiteFormPr
                             </div>
                         )}
 
-                        <div className="md:col-span-2 pt-4 border-t border-zinc-800">
-                            <label className="label mb-3">Hiển thị cho các nhóm/phòng ban (Dành cho Admin/Manager)</label>
-                            <div className="flex flex-wrap gap-3">
-                                {["BOD", "GM", "BOM", "PROJECT_TEAM", "BRAND_TEAM"].map(role => (
-                                    <label key={role} className="flex items-center gap-2 cursor-pointer bg-zinc-800/50 px-3 py-2 rounded-lg border border-zinc-700 hover:bg-zinc-800 transition-colors">
-                                        <input
-                                            type="checkbox"
-                                            className="rounded border-zinc-600 bg-zinc-900 text-blue-500 focus:ring-blue-500/50 focus:ring-offset-0 w-4 h-4 cursor-pointer"
-                                            checked={selectedRoles.includes(role)}
-                                            onChange={(e) => {
-                                                if (e.target.checked) setSelectedRoles(prev => [...prev, role]);
-                                                else setSelectedRoles(prev => prev.filter(r => r !== role));
-                                            }}
-                                        />
-                                        <span className="text-sm font-medium text-zinc-300 pointer-events-none select-none">{role}</span>
-                                    </label>
-                                ))}
+                        <div className="md:col-span-2 pt-4 border-t border-zinc-800 space-y-4">
+                            <div>
+                                <label className="label mb-3">Hiển thị cho các nhóm/phòng ban</label>
+                                <div className="flex flex-wrap gap-3">
+                                    {["BOD", "GM", "BOM", "PROJECT_TEAM", "BRAND_TEAM"].map(role => (
+                                        <label key={role} className="flex items-center gap-2 cursor-pointer bg-zinc-800/50 px-3 py-2 rounded-lg border border-zinc-700 hover:bg-zinc-800 transition-colors">
+                                            <input
+                                                type="checkbox"
+                                                className="rounded border-zinc-600 bg-zinc-900 text-blue-500 focus:ring-blue-500/50 focus:ring-offset-0 w-4 h-4 cursor-pointer"
+                                                checked={selectedRoles.includes(role)}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) setSelectedRoles(prev => [...prev, role]);
+                                                    else setSelectedRoles(prev => prev.filter(r => r !== role));
+                                                }}
+                                            />
+                                            <span className="text-sm font-medium text-zinc-300 pointer-events-none select-none">{role}</span>
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
-                            <p className="text-[10px] text-zinc-500 mt-2">Chọn các nhóm sẽ nhận thông báo và có quyền xem mặt bằng này sau khi submit.</p>
+
+                            <div>
+                                <label className="label mb-3">Hiển thị đích danh cho cá nhân</label>
+                                <div className="bg-zinc-800/30 border border-zinc-700/50 rounded-lg p-3">
+                                    <div className="relative mb-3">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
+                                        <input
+                                            type="text"
+                                            placeholder="Tìm kiếm người dùng..."
+                                            value={userSearch}
+                                            onChange={(e) => setUserSearch(e.target.value)}
+                                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg py-1.5 pl-9 pr-3 text-sm text-white focus:outline-none focus:border-blue-500/50 transition-colors"
+                                        />
+                                    </div>
+                                    <div className="max-h-40 overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-2">
+                                        {usersList
+                                            .filter(u =>
+                                                u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+                                                u.email.toLowerCase().includes(userSearch.toLowerCase())
+                                            )
+                                            .map(user => (
+                                                <label key={user.id} className="flex items-center justify-between p-2 hover:bg-zinc-800/80 rounded-lg cursor-pointer transition-colors group">
+                                                    <div className="flex items-center gap-3">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="rounded border-zinc-600 bg-zinc-900 text-blue-500 focus:ring-blue-500/50 focus:ring-offset-0 w-4 h-4 cursor-pointer"
+                                                            checked={selectedUsers.includes(user.id)}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) setSelectedUsers(prev => [...prev, user.id]);
+                                                                else setSelectedUsers(prev => prev.filter(id => id !== user.id));
+                                                            }}
+                                                        />
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors">{user.name}</span>
+                                                            <span className="text-[10px] text-zinc-500">{user.email}</span>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-[10px] uppercase font-bold text-zinc-600 tracking-wider">{user.role}</span>
+                                                </label>
+                                            ))}
+                                        {usersList.length === 0 && (
+                                            <div className="text-center py-4 text-xs text-zinc-500">
+                                                Không có người dùng nào (Hoặc bạn không có quyền xem)
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <p className="text-[10px] text-zinc-500 mt-2">Chọn các nhóm hoặc cá nhân sẽ nhận thông báo và có quyền xem mặt bằng này sau khi submit.</p>
                         </div>
                     </div>
                 </form>

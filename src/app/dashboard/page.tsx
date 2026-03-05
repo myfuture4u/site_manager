@@ -18,7 +18,7 @@ export default async function DashboardPage() {
     // Fetch stats
     const [totalSites, pendingSites, sitesThisMonth, totalUsers] = await Promise.all([
         prisma.site.count(),
-        prisma.site.count({ where: { status: "PENDING" } }),
+        prisma.site.count({ where: { status: "REVIEWING" } }),
         prisma.site.count({
             where: {
                 createdAt: {

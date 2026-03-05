@@ -59,14 +59,17 @@ export default async function SiteDetailsPage({ params }: { params: Promise<{ id
 
     const stats = [
         { label: "Loại hình", value: SITE_TYPE_LABELS[site.siteType] || site.siteType, icon: Building },
+        { label: "Thương hiệu", value: site.brand || "—", icon: Layers },
         { label: "Hình thức thuê", value: RENT_TYPE_LABELS[site.rentType || ""] || site.rentType || "—", icon: Layers },
         { label: "Diện tích", value: site.floorArea ? `${site.floorArea} m²` : "—", icon: Maximize },
         { label: "Giá thuê", value: formatCurrency(site.rentPrice), icon: DollarSign },
     ];
 
     let visibleRolesList = [];
+    let visibleUsersList = [];
     try {
         visibleRolesList = JSON.parse(site.visibleToRoles || "[]");
+        visibleUsersList = JSON.parse(site.visibleToUsers || "[]");
     } catch (e) { }
 
     return (
@@ -91,13 +94,16 @@ export default async function SiteDetailsPage({ params }: { params: Promise<{ id
                 <SiteActions site={site} />
             </header>
 
-            {site.isSubmitted && visibleRolesList.length > 0 && (
+            {site.isSubmitted && (visibleRolesList.length > 0 || visibleUsersList.length > 0) && (
                 <div className="mb-8 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-start gap-3">
                     <User className="text-blue-400 mt-0.5" size={18} />
                     <div>
                         <h3 className="text-sm font-semibold text-blue-400 mb-1">Mặt bằng đã được chia sẻ</h3>
                         <p className="text-xs text-blue-400/80">
-                            Mặt bằng này đang được mở quyền xem cho các nhóm: <span className="font-bold text-blue-300">{visibleRolesList.join(", ")}</span>
+                            Mặt bằng này đang được mở quyền xem cho:{" "}
+                            {visibleRolesList.length > 0 && <span className="font-bold text-blue-300">Nhóm ({visibleRolesList.join(", ")})</span>}
+                            {visibleRolesList.length > 0 && visibleUsersList.length > 0 && " và "}
+                            {visibleUsersList.length > 0 && <span className="font-bold text-blue-300">{visibleUsersList.length} user cụ thể</span>}
                         </p>
                     </div>
                 </div>
