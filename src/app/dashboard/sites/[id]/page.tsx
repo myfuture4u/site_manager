@@ -64,6 +64,11 @@ export default async function SiteDetailsPage({ params }: { params: Promise<{ id
         { label: "Giá thuê", value: formatCurrency(site.rentPrice), icon: DollarSign },
     ];
 
+    let visibleRolesList = [];
+    try {
+        visibleRolesList = JSON.parse(site.visibleToRoles || "[]");
+    } catch (e) { }
+
     return (
         <div className="p-8 fade-in">
             <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -85,6 +90,18 @@ export default async function SiteDetailsPage({ params }: { params: Promise<{ id
                 </div>
                 <SiteActions site={site} />
             </header>
+
+            {site.isSubmitted && visibleRolesList.length > 0 && (
+                <div className="mb-8 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-start gap-3">
+                    <User className="text-blue-400 mt-0.5" size={18} />
+                    <div>
+                        <h3 className="text-sm font-semibold text-blue-400 mb-1">Mặt bằng đã được chia sẻ</h3>
+                        <p className="text-xs text-blue-400/80">
+                            Mặt bằng này đang được mở quyền xem cho các nhóm: <span className="font-bold text-blue-300">{visibleRolesList.join(", ")}</span>
+                        </p>
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Content */}

@@ -63,19 +63,23 @@ export const RENT_TYPE_LABELS: Record<string, string> = {
 
 export const ROLE_LABELS: Record<string, string> = {
     ADMIN: "Admin",
-    SITE_TEAM: "Site Team",
+    SITE_MANAGER: "Site Manager",
+    SITE_DEVELOPER: "Site Developer",
+    BOD: "BOD",
+    GM: "GM",
+    BOM: "BOM",
+    PROJECT_TEAM: "Project Team",
     BRAND_TEAM: "Brand Team",
-    OTHER: "Other",
 };
 
 export function canEditSite(role: string) {
-    return role === "ADMIN" || role === "SITE_TEAM";
+    return role === "ADMIN" || role === "SITE_MANAGER" || role === "SITE_DEVELOPER";
 }
 
 export function canManageUsers(role: string) {
-    return role === "ADMIN";
+    return role === "ADMIN" || role === "SITE_MANAGER";
 }
 
 export function canChangeStatus(role: string) {
-    return role === "ADMIN" || role === "SITE_TEAM";
+    return role === "ADMIN" || role === "SITE_MANAGER";
 }

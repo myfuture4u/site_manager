@@ -19,9 +19,11 @@ Môi trường dự án Site Manager đã được khởi tạo thành công cù
 | Vai trò (Role) | Chức năng & Quyền hạn |
 | :--- | :--- |
 | **Admin** | Quản trị viên hệ thống. Có toàn quyền: Quản lý Users (Thêm, Sửa, Vô hiệu hoá), toàn quyền quản lý Sites (Thêm, Xóa, Sửa, Duyệt), xoá tài liệu/hình ảnh do người khác tải lên. |
-| **Site Team** | Đội ngũ phát triển mặt bằng. Quyền hạn chính: Xem, Thêm mới, Sửa thông tin các Sites, upload tài liệu/hình ảnh, chỉnh sửa trạng thái mặt bằng. |
-| **Brand Team** | Đại diện nhãn hàng. Quyền hạn chính: Xem danh sách Sites, upload tài liệu/hình ảnh cho Site, Thêm các Bình luận. Không có quyền sửa đổi thông tin chính của Site hay người dùng. |
-| **Other (Guest)** | Người dùng nội bộ khác. Quyền hạn tương tự Brand Team: Xem Sites, Comment, và Upload tài liệu bổ sung nếu được yêu cầu. Không có quyền thay đổi dữ liệu của Site. |
+| **Site_Manager** | Quản lý bộ phận Site. Quyền hạn chính: Xem tất cả mặt bằng, "Submit Site" và chỉ định hiển thị cho các phòng ban khác xem. |
+| **Site_Developer** | Nhân viên phát triển mặt bằng. Quyền hạn: Thêm mới mặt bằng, xem mặt bằng do chính mình tạo ra. Khi tạo xong cần báo Manager hoặc tạo form duyệt để được publish. |
+| **BOD / GM / BOM** | Ban Giám đốc, Board of Manager, Group Manager. Chỉ thấy các mặt bằng đã được Site Manager duyệt và cấp quyền hiển thị cho phòng ban của mình. Mới được comment. |
+| **Project Team** | Bộ phận dự án xây dựng. Có quyền xem, tải tệp tin và bình luận trên những site được chia sẻ. |
+| **Brand Team** | Đại diện nhãn hàng. Có quyền xem, tải tệp tin và bình luận trên những site được Site Manager chia sẻ. |
 
 ## Hướng dẫn kiểm tra (Verification)
 1. Hiện tại máy chủ đang chạy ở địa chỉ: **[http://localhost:3000](http://localhost:3000)**.

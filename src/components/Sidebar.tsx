@@ -14,8 +14,8 @@ import {
 import { ROLE_LABELS } from "@/lib/utils";
 
 const navItems = [
-    { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", roles: ["ADMIN", "SITE_TEAM", "BRAND_TEAM", "OTHER"] },
-    { href: "/dashboard/sites", icon: MapPin, label: "Mặt bằng", roles: ["ADMIN", "SITE_TEAM", "BRAND_TEAM", "OTHER"] },
+    { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", roles: ["ADMIN", "SITE_MANAGER", "SITE_DEVELOPER", "BOD", "GM", "BOM", "PROJECT_TEAM", "BRAND_TEAM"] },
+    { href: "/dashboard/sites", icon: MapPin, label: "Mặt bằng", roles: ["ADMIN", "SITE_MANAGER", "SITE_DEVELOPER", "BOD", "GM", "BOM", "PROJECT_TEAM", "BRAND_TEAM"] },
     { href: "/dashboard/users", icon: Users, label: "Người dùng", roles: ["ADMIN"] },
     { href: "/dashboard/master-data", icon: Database, label: "Dữ liệu chuẩn", roles: ["ADMIN"] },
 ];

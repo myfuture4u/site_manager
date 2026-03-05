@@ -68,7 +68,7 @@ export default function SitesPage() {
                     <h1 className="text-2xl font-bold text-white mb-1">Quản lý mặt bằng</h1>
                     <p className="text-zinc-400">Danh sách các địa điểm đang được theo dõi và đánh giá.</p>
                 </div>
-                {(role === "ADMIN" || role === "SITE_TEAM") && (
+                {(role === "ADMIN" || role === "SITE_MANAGER" || role === "SITE_DEVELOPER") && (
                     <button onClick={() => setShowForm(true)} className="btn-primary" type="button">
                         <Plus size={18} />
                         <span>Thêm mặt bằng</span>

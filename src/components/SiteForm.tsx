@@ -14,6 +14,9 @@ export default function SiteForm({ onClose, onSuccess, initialData }: SiteFormPr
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [selectedRoles, setSelectedRoles] = useState<string[]>(
+        initialData?.visibleToRoles ? JSON.parse(initialData.visibleToRoles) : []
+    );
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -28,6 +31,7 @@ export default function SiteForm({ onClose, onSuccess, initialData }: SiteFormPr
 
         const formData = new FormData(e.currentTarget);
         const data = Object.fromEntries(formData.entries());
+        data.visibleToRoles = JSON.stringify(selectedRoles);
 
         try {
             const url = initialData ? `/api/sites/${initialData.id}` : "/api/sites";
@@ -202,6 +206,27 @@ export default function SiteForm({ onClose, onSuccess, initialData }: SiteFormPr
                                 )}
                             </div>
                         )}
+
+                        <div className="md:col-span-2 pt-4 border-t border-zinc-800">
+                            <label className="label mb-3">Hiển thị cho các nhóm/phòng ban (Dành cho Admin/Manager)</label>
+                            <div className="flex flex-wrap gap-3">
+                                {["BOD", "GM", "BOM", "PROJECT_TEAM", "BRAND_TEAM"].map(role => (
+                                    <label key={role} className="flex items-center gap-2 cursor-pointer bg-zinc-800/50 px-3 py-2 rounded-lg border border-zinc-700 hover:bg-zinc-800 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            className="rounded border-zinc-600 bg-zinc-900 text-blue-500 focus:ring-blue-500/50 focus:ring-offset-0 w-4 h-4 cursor-pointer"
+                                            checked={selectedRoles.includes(role)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) setSelectedRoles(prev => [...prev, role]);
+                                                else setSelectedRoles(prev => prev.filter(r => r !== role));
+                                            }}
+                                        />
+                                        <span className="text-sm font-medium text-zinc-300 pointer-events-none select-none">{role}</span>
+                                    </label>
+                                ))}
+                            </div>
+                            <p className="text-[10px] text-zinc-500 mt-2">Chọn các nhóm sẽ nhận thông báo và có quyền xem mặt bằng này sau khi submit.</p>
+                        </div>
                     </div>
                 </form>
 

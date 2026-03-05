@@ -42,6 +42,30 @@ export async function GET(req: NextRequest) {
         }
     }
 
+    const role = session.user.role;
+    const userId = session.user.id;
+
+    if (role === "ADMIN" || role === "SITE_MANAGER") {
+        // Can see all sites
+    } else if (role === "SITE_DEVELOPER") {
+        // Can see sites they created, OR sites that are submitted and visible to SITE_DEVELOPER
+        where.OR = [
+            ...(where.OR ? where.OR as any[] : []),
+            { createdById: userId },
+            {
+                AND: [
+                    { isSubmitted: true },
+                    { visibleToRoles: { contains: `"SITE_DEVELOPER"` } }
+                ]
+            }
+        ];
+    } else {
+        // Other roles can only see submitted sites where their role is in visibleToRoles
+        where.isSubmitted = true;
+        where.visibleToRoles = { contains: `"${role}"` };
+    }
+
+
     const [sites, total] = await Promise.all([
         prisma.site.findMany({
             where,
@@ -68,7 +92,7 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const role = session.user.role;
-    if (role !== "ADMIN" && role !== "SITE_TEAM") {
+    if (role !== "ADMIN" && role !== "SITE_MANAGER" && role !== "SITE_DEVELOPER") {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

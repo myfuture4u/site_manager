@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
-import { Menu, Bell, User } from "lucide-react";
+import { Menu, User } from "lucide-react";
+import NotificationsDropdown from "./NotificationsDropdown";
 
 interface TopHeaderProps {
     onMenuClick: () => void;
@@ -29,10 +30,7 @@ export default function TopHeader({ onMenuClick }: TopHeaderProps) {
 
             {/* Right side */}
             <div className="flex items-center gap-3">
-                <button className="p-2 rounded-full text-[var(--text-secondary)] hover:text-[var(--accent-blue)] hover:bg-[rgba(59,130,246,0.1)] transition-all duration-300 hover:scale-110 active:scale-95 relative">
-                    <Bell size={20} />
-                    <span className="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-[var(--bg-secondary)]"></span>
-                </button>
+                <NotificationsDropdown />
 
                 <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-400 p-[2px] cursor-pointer transition-transform duration-300 hover:scale-105 active:scale-95">
                     <div className="h-full w-full rounded-full bg-[var(--bg-secondary)] flex items-center justify-center overflow-hidden">

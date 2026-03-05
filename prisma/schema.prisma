@@ -19,35 +19,41 @@ model User {
   updatedAt   DateTime         @updatedAt
   auditLogs   AuditLog[]
   comments    Comment[]
-  sites       Site[]           @relation("CreatedBy")
-  attachments SiteAttachment[]
+  sites         Site[]           @relation("CreatedBy")
+  attachments   SiteAttachment[]
+  notifications Notification[]
 }
 
 model Site {
-  id          String           @id @default(cuid())
-  name        String
-  address     String
-  street      String?
-  ward        String?
-  district    String?
-  city        String
-  siteType    String
-  description String?
-  rentPrice   Float?
-  rentUnit    String?
-  rentType    String?
-  floorArea   Float?
-  frontage    Float?
-  floors      Int?
-  mapsLink    String?
-  status      String           @default("NEW")
-  createdById String
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  auditLogs   AuditLog[]
-  comments    Comment[]
-  createdBy   User             @relation("CreatedBy", fields: [createdById], references: [id])
-  attachments SiteAttachment[]
+  id               String           @id @default(cuid())
+  name             String
+  address          String
+  street           String?
+  ward             String?
+  district         String?
+  city             String
+  siteType         String
+  description      String?
+  rentPrice        Float?
+  rentUnit         String?
+  rentType         String?
+  floorArea        Float?
+  frontage         Float?
+  floors           Int?
+  mapsLink         String?
+  status           String           @default("NEW")
+  
+  // Visibility and Workflow Fields
+  isSubmitted      Boolean          @default(false)
+  visibleToRoles   String           @default("[]") // Store as JSON string array ["BOD", "BRAND_TEAM"] for SQLite fallback / easy parsing
+  
+  createdById      String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  auditLogs        AuditLog[]
+  comments         Comment[]
+  createdBy        User             @relation("CreatedBy", fields: [createdById], references: [id])
+  attachments      SiteAttachment[]
 
   @@index([city])
   @@index([status])
@@ -109,4 +115,17 @@ model MasterData {
   updatedAt   DateTime @updatedAt
   
   @@index([type])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  siteId      String?
+  title       String
+  message     String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
 }
